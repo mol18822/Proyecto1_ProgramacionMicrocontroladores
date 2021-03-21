@@ -4,7 +4,7 @@
 ;Compilador:		pic-as (v2.31) MPLABX V5.40
 ; ---------------------------------------------------------------------------- ;    
 ; -------------------------- Proyecto No. 1 ---------------------------------- ;     
-; ----------------------------- Semáforo ------------------------------------- ;
+; ----------------------------- Semáforos ------------------------------------ ;
 
 ;Creado:		09 marzo, 2021
 ;Ultima modificación:	08 abril, 2021
@@ -108,9 +108,11 @@ ORG 100h			; Posición para el código
     
 main:
     
+    call    oscillator
+    call    configuration_IO
 ; ------------------------- Loop principal ----------------------------------- ;
     
-loop:
+;loop:
     
 ; --------------------------- Subrutinas ------------------------------------- ;
     
@@ -119,76 +121,42 @@ loop:
 configuration_IO:
 
     BANKSEL ANSEL		; Se selecciona bank 3
-    clrf    ANSEL		; Definir puertos digitales
-    clrf    ANSELH
+    clrf    ANSEL		; I/O análogicos == 0 
+    clrf    ANSELH		; I/O analógicos == 0
     
 ; ------------ Configuración de pines del puerto A --> Outputs --------------- ;
 ; ------------- Leds rojo, amarillo y verde de Semáforo 1 y 2 ---------------- ;
     
-    BANKSEL TRISA		; Se selecciona banco 1
-    bcf	    TRISA,  0		; RA0 --> Output --> Led rojo	  - Semáforo 1
-    bcf	    TRISA,  1		; RA1 --> Output --> Led amarillo - Semáforo 1
-    bcf	    TRISA,  2		; RA2 --> Output --> Led verde    - Semáforo 1
-    bcf	    TRISA,  3		; RA3 --> Output --> Led rojo     - Semáforo 2
-    bcf	    TRISA,  4		; RA4 --> Output --> Led amarillo - Semáforo 2
-    bcf	    TRISA,  5		; RA5 --> Output --> Led verde    - Semáforo 2
 
-; ----------- Configuración de pines del puerto B -- > Inputs ---------------- ;    
+    BANKSEL TRISA		; Se selecciona banco 1
+    clrf    TRISA		; PORTA como outputs
+  
+; ------------- Configuración de pines del puerto B -- > I/O ----------------- ;    
     
     BANKSEL TRISB		; Se selecciona banco 1
-    bsf	    TRISB,  0		; RB0 --> Input --> PB1
-    bsf	    TRISB,  1		; RB1 --> Input --> PB2
-    bsf	    TRISB,  2		; RB2 --> Input --> PB3
-    
-; ----------- Configuración de pines del puerto B -- > Outputs --------------- ;  
-; ------------- Puertos para indicar en qué semáforo estamos ----------------- ;
-    
-    bcf	    TRISB,  3		; RB3 --> Output --> Semáforo 1
-    bcf	    TRISB,  4		; RB4 --> Output --> Semáforo 2
-    bcf	    TRISB,  5		; RB5 --> Output --> Semáforo 3
+    movlw   10001110B		; I/O
+    movwf   TRISB		; I/O PORTB
     
 ; ------------ Configuración de pines del puerto C --> Outputs --------------- ;
 ; ------------------- Puertos para display 7 segmentos ----------------------- ;    
     
     BANKSEL TRISC		; Se selecciona banco 1
-    bcf	    TRISC,  0		; RC0 --> Output  --> 7D - A 
-    bcf	    TRISC,  1		; RC1 --> Output  --> 7D - B
-    bcf	    TRISC,  2		; RC2 --> Output  --> 7D - C
-    bcf	    TRISC,  3		; RC3 --> Output  --> 7D - D
-    bcf	    TRISC,  4		; RC4 --> Output  --> 7D - E
-    bcf	    TRISC,  5		; RC5 --> Output  --> 7D - F
-    bcf	    TRISC,  6		; RC6 --> Output  --> 7D - G
+    clrf    TRISC		; PORTC como outputs
     
 ; ----------- Configuración de pines del puerto D --> Outputs ---------------- ;
 ; -------- Transistores que le dan la señal a los display 7 segmentos -------- ;
     
     BANKSEL TRISD		; Se selecciona banco 1
-    bcf	    TRISD,  0		; RD0 --> Output  --> Display 1  --> Tiempo
-    bcf	    TRISD,  1		; RD1 --> Output  --> Display 2  --> Tiempo
-    bcf	    TRISD,  2		; RD2 --> Output  --> Display 3  --> Rojo
-    bcf	    TRISD,  3		; RD3 --> Output  --> Display 4  --> Rojo
-    bcf	    TRISD,  4		; RD4 --> Output  --> Display 5  --> Amarillo
-    bcf	    TRISD,  5		; RD5 --> Output  --> Display 6  --> Amarillo
-    bcf	    TRISD,  6		; RD6 --> Output  --> Display 7  --> Verde
-    bcf	    TRISD,  7		; RD7 --> Output  --> Display 8  --> Verde
-    
-; ----------- Configuración de pines del puerto E --> Outputs ---------------- ;    
-; -------------- Leds rojo, amarillo y verde de semáforo 3 ------------------- ;
-    
-    BANKSEL TRISE		; Se selecciona banco 1
-    bcf	    TRISE,  0		; RE0 --> Output  --> Led rojo     - Semáforo 3
-    bcf	    TRISE,  1		; RE1 --> Output  --> Led amarillo - Semáforo 3
-    bcf	    TRISE,  2		; RE2 --> Output  --> Led verde    - Semáforo 3
-    
+    clrf    TRISD   		; PORTD como outputs
 ; ------------------------- PORTB en pull-up --------------------------------- ;    
 
     BANKSEL	OPTION_REG
     bcf		OPTION_REG,  7
     
     BANKSEL	WPUB
-    bsf		WPUB,  0	; PB1 
-    bsf		WPUB,  1	; PB2
-    bsf		WPUB,  2	; PB3
+    bsf		WPUB,  1	; PB1 
+    bsf		WPUB,  2	; PB2
+    bsf		WPUB,  3	; PB3
     
 ; -------------------------- Limpieza de puertos ----------------------------- ; 
     
@@ -200,10 +168,14 @@ configuration_IO:
     clrf    PORTD
     return
     
+; ------------------- Configuración de reloj interno ------------------------- ;
     
-  
+oscillator:
     
+    BANKSEL TRISA
+    bcf	    IRCF2		; 0
+    bsf	    IRCF1		; 1
+    bsf	    IRCF0		; 1     4 MHz
+    return
 
-    
-   
 END

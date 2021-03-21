@@ -7,7 +7,7 @@
 ;Compilador: pic-as (v2.31) MPLABX V5.40
 ; ---------------------------------------------------------------------------- ;
 ; -------------------------- Proyecto No. 1 ---------------------------------- ;
-; ----------------------------- Semáforo ------------------------------------- ;
+; ----------------------------- Semáforos ------------------------------------ ;
 
 ;Creado: 09 marzo, 2021
 ;Ultima modificación: 08 abril, 2021
@@ -2539,9 +2539,11 @@ ORG 100h ; Posición para el código
 
 main:
 
+    call oscillator
+    call configuration_IO
 ; ------------------------- Loop principal ----------------------------------- ;
 
-loop:
+;loop:
 
 ; --------------------------- Subrutinas ------------------------------------- ;
 
@@ -2550,12 +2552,61 @@ loop:
 configuration_IO:
 
     BANKSEL ANSEL ; Se selecciona bank 3
-    clrf ANSEL ; Definir puertos digitales
-    clrf ANSELH
+    clrf ANSEL ; I/O análogicos == 0
+    clrf ANSELH ; I/O analógicos == 0
+
+; ------------ Configuración de pines del puerto A --> Outputs --------------- ;
+; ------------- Leds rojo, amarillo y verde de Semáforo 1 y 2 ---------------- ;
 
 
+    BANKSEL TRISA ; Se selecciona banco 1
+    clrf TRISA ; PORTA como outputs
 
+; ------------- Configuración de pines del puerto B -- > I/O ----------------- ;
 
+    BANKSEL TRISB ; Se selecciona banco 1
+    movlw 10001110B ; I/O
+    movwf TRISB ; I/O PORTB
 
+; ------------ Configuración de pines del puerto C --> Outputs --------------- ;
+; ------------------- Puertos para display 7 segmentos ----------------------- ;
+
+    BANKSEL TRISC ; Se selecciona banco 1
+    clrf TRISC ; PORTC como outputs
+
+; ----------- Configuración de pines del puerto D --> Outputs ---------------- ;
+; -------- Transistores que le dan la señal a los display 7 segmentos -------- ;
+
+    BANKSEL TRISD ; Se selecciona banco 1
+    clrf TRISD ; PORTD como outputs
+; ------------------------- PORTB en pull-up --------------------------------- ;
+
+    BANKSEL OPTION_REG
+    bcf OPTION_REG, 7
+
+    BANKSEL WPUB
+    bsf WPUB, 1 ; PB1
+    bsf WPUB, 2 ; PB2
+    bsf WPUB, 3 ; PB3
+
+; -------------------------- Limpieza de puertos ----------------------------- ;
+
+    BANKSEL PORTA
+
+    clrf PORTA
+    clrf PORTB
+    clrf PORTC
+    clrf PORTD
+    return
+
+; ------------------- Configuración de reloj interno ------------------------- ;
+
+oscillator:
+
+    BANKSEL TRISA
+    bcf ((OSCCON) and 07Fh), 6 ; 0
+    bsf ((OSCCON) and 07Fh), 5 ; 1
+    bsf ((OSCCON) and 07Fh), 4 ; 1 4 MHz
+    return
 
 END
